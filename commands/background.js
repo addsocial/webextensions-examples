@@ -10,10 +10,13 @@
  *       shortcut: "Ctrl+Shift+U"
  *    }]
  */
-chrome.commands.getAll(function(commands) {
-  commands.forEach(function(command) {
+let gettingAllCommands = browser.commands.getAll();
+gettingAllCommands.then((commands) => {
+  for (let command of commands) {
+    // Note that this logs to the Add-on Debugger's console: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Debugging
+    // not the regular Web console.
     console.log(command);
-  });
+  }
 });
 
 /**
@@ -22,6 +25,6 @@ chrome.commands.getAll(function(commands) {
  * In this sample extension, there is only one registered command: "Ctrl+Shift+U".
  * On Mac, this command will automatically be converted to "Command+Shift+U".
  */
-chrome.commands.onCommand.addListener(function(command) {
-  console.log("onCommand event received for message: ", command);
+browser.commands.onCommand.addListener((command) => {
+  browser.tabs.create({url: "https://developer.mozilla.org"});
 });

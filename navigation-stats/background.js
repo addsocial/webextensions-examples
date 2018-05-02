@@ -1,17 +1,31 @@
 // Load existent stats with the storage API.
-chrome.storage.local.get("hostNavigationStats", results => {
+var gettingStoredStats = browser.storage.local.get();
+
+gettingStoredStats.then(results => {
   // Initialize the saved stats if not yet initialized.
-  if (!results.hostNavigationStats) {
+  if (!results.stats) {
     results = {
-      hostNavigationStats: {}
+      host: {},
+      type: {}
     };
   }
 
-  const {hostNavigationStats} = results;
-
   // Monitor completed navigation events and update
   // stats accordingly.
-  chrome.webNavigation.onCompleted.addListener(evt => {
+  browser.webNavigation.onCommitted.addListener((evt) => {
+    if (evt.frameId !== 0) {
+      return;
+    }
+
+    let transitionType = evt.transitionType;
+    results.type[transitionType] = results.type[transitionType] || 0;
+    results.type[transitionType]++;
+
+    // Persist the updated stats.
+    browser.storage.local.set(results);
+  });
+
+  browser.webNavigation.onCompleted.addListener(evt => {
     // Filter out any sub-frame related navigation event
     if (evt.frameId !== 0) {
       return;
@@ -19,10 +33,11 @@ chrome.storage.local.get("hostNavigationStats", results => {
 
     const url = new URL(evt.url);
 
-    hostNavigationStats[url.hostname] = hostNavigationStats[url.hostname] || 0;
-    hostNavigationStats[url.hostname]++;
+    results.host[url.hostname] = results.host[url.hostname] || 0;
+    results.host[url.hostname]++;
 
     // Persist the updated stats.
-    chrome.storage.local.set(results);
-  }, { url: [{schemes: ["http", "https"]}]});
+    browser.storage.local.set(results);
+  }, {
+    url: [{schemes: ["http", "https"]}]});
 });
